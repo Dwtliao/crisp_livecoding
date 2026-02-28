@@ -462,14 +462,15 @@ sessions = []
 # init first group in output
 current = [times[0]]
 
-# zip to compare consecutive pairs — very Pythonic.
+# zip to compare consecutive pairs — very Pythonic; zip(a, b) stops when the shorter list ends
+# zip(times, times[1:]) produces 3 pairs: (10:00, 10:10) (10:10, 10:40) (10:40, 11:20)
 for prev, curr in zip(times, times[1:]):
     if curr - prev <= timedelta(minutes=30):
         current.append(curr)
     else:
         sessions.append(current)
         current = [curr]
-
+# loop ends with current = 11:20  last value
 sessions.append(current)
 
 print(sessions)
