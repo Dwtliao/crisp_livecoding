@@ -402,3 +402,94 @@ print(final_string)
 # start at the end, # go until the beginning,  # step backwards by 1
 words[ : : -1]  # ['david', 'from', 'world', 'hello']
 "hello"[::-1] # 'olleh'
+
+"""
+10. Given a list of timestamps, group them into sessions
+A session ends if more than 30 minutes pass between events.
+input: [10:00, 10:10, 10:40, 11:20]
+output: [ 
+  [10:00, 10:10, 10:40],
+  [11:20]
+]
+"""
+# loop thru event times and keep track of previous time to check if 30min has passed
+from datetime import datetime, time, timedelta
+def add_minutes(t, minutes):
+    if isinstance(t, datetime):
+        t = t.time()
+    return (datetime.combine(datetime.today(), t) + timedelta(minutes=minutes))
+
+raw = ["10:00", "10:10", "10:40", "11:20"]
+raw_times = [datetime.strptime(t, "%H:%M").time() for t in raw]
+
+def time_to_datetime(t1):
+    return datetime.combine(datetime.today(), t1)
+
+times_list = [ time_to_datetime(t) for t in raw_times]
+print("times_list converted to datetime",times_list)
+
+output = [[] for _ in range(len(times_list))]
+
+# set initial compare  start time
+compare_time = times_list[0]
+group = 0
+for i, t in enumerate(times_list):
+    print("datetime t:",t)
+    if i == 0:
+        output[group].append(t)
+        continue
+    else:
+        compare_time = times_list[i-1]
+
+    time_diff = (t - compare_time).total_seconds()
+    print("time_diff secs: ",time_diff)
+    if time_diff <= 1800:  # 30 min x 60s
+        # add to current group
+        output[group].append(t)
+    else:
+        # increment group and reset start time
+        group +=1
+        compare_time = times_list[i - 1]
+        output[group].append(t)
+
+print(output)
+
+# Q10 better more elegant solution
+from datetime import datetime, timedelta
+raw = ["10:00", "10:10", "10:40", "11:20"]
+times = [datetime.strptime(t, "%H:%M") for t in raw]
+sessions = []
+# init first group in output
+current = [times[0]]
+
+# zip to compare consecutive pairs — very Pythonic.
+for prev, curr in zip(times, times[1:]):
+    if curr - prev <= timedelta(minutes=30):
+        current.append(curr)
+    else:
+        sessions.append(current)
+        current = [curr]
+
+sessions.append(current)
+
+print(sessions)
+
+# Q10 functionlize soln
+from datetime import datetime, timedelta
+
+def group_sessions(raw_times, gap=30):
+    times = [datetime.strptime(t, "%H:%M") for t in raw_times]
+    sessions = []
+    current = [times[0]]
+
+    for prev, curr in zip(times, times[1:]):
+        if curr - prev <= timedelta(minutes=gap):
+            current.append(curr)
+        else:
+            sessions.append(current)
+            current = [curr]
+
+    sessions.append(current)
+    return sessions
+
+print(group_sessions(["10:00", "10:10", "10:40", "11:20"]))
