@@ -171,3 +171,149 @@ def merge_intervals(intervals):
             merged.append(interval)
 
     return merged
+
+"""  
+Extract unique domains from email addresses
+emails = ["alice@gmail.com", "bob@yahoo.com", "carol@gmail.com"]
+unique_domains = ["gmail.com", "yahoo.com"]
+
+Assumptions: the pattern seems to be the internet domain name appears after symbol "@"
+we dont need to know what is before '@' but we want all chars after '@' symbol seems to be essence of problem
+Helper funcs:  something to find the position of string where '@' appears
+"""
+emails = ["alice@gmail.com", "bob@yahoo.com", "carol@gmail.com"]
+emails_recurr = ["dwtliao@_@yahoo.com", "bob@yahoo.com"]
+
+def find_domain_start_simple(search_char: str, email: str):
+    # str.find() returns -1 if not found.
+    position = email.find(search_char)
+    if position != -1:
+        return position
+    return None
+
+def extract_domain(email: str):
+    start = find_domain_start_simple('@', email)
+    if start is not None:
+        return email[start + 1:]
+    else:
+        return None
+
+# we want unique email domains so use a set to store
+unique_domains = set( extract_domain(email) for email in emails )
+print((unique_domains))
+
+# what if search char @ occurrs multiple times? we want the domain after final @ char, good case for recursion
+# why this works, You never slice the string always search the original entire email and move start_index forward
+def find_domain_start_recurr(search_char: str, email: str, start_index=0, last_position=None):
+    # Find next occurrence starting from start_index
+    position = email.find(search_char, start_index)
+
+    if position == -1:  # ending condition of recursion
+        return last_position
+
+    # Found an '@', update last_position thru all recurrsive calls
+    last_position = position
+
+    # Recursive call to search for another '@' after this one
+    return find_domain_start_recurr(search_char, email, position + 1, last_position)
+
+def extract_domain2(email: str):
+    start = find_domain_start_recurr('@', email, None)
+    if start is not None:
+        return email[start + 1:]
+    else:
+        return None
+
+unique_recurr = set(extract_domain2(email) for email in emails_recurr )
+print(unique_recurr)
+
+# really simplified elegant solution
+unique_domains = {
+    email.split('@')[1].lower()
+    for email in emails
+    if '@' in email
+}
+print(unique_domains)
+
+"""
+Section 2 “Don’t code until you see the structure”
+Group transactions by day
+
+data = [
+  {"timestamp": "2024-01-01T10:00", "amount": 10},
+  {"timestamp": "2024-01-01T12:00", "amount": 20},
+  {"timestamp": "2024-01-02T09:00", "amount": 5}
+]
+wanted_output = {
+  "2024-01-01": [10, 20],
+  "2024-01-02": [5]
+}
+Observed Assumptions to start: each row of data is a dict obj of a date and timestamp key and amount key
+we dont need the time port of datetime so we need to func to convert these values and drop the time component
+
+once data list is converted to date keys with amounts it will be easier to group amount transactions together
+"""
+data = [
+  {"timestamp": "2024-01-01T10:00", "amount": 10},
+  {"timestamp": "2024-01-01T12:00", "amount": 20},
+  {"timestamp": "2024-01-02T09:00", "amount": 5},
+  {"timestamp": "2024-01-01T14:00", "amount": 35},
+  {"timestamp": "2024-01-02T12:00", "amount": 55}
+]
+from datetime import date, datetime
+
+# convert to a simple list of tuple values?  and I should not assume sorting so I must sort myself
+def datetime_str_to_date(dt_str: str):
+    """
+    Convert an ISO-like datetime string (e.g., '2024-01-01T10:00') to a date object.
+    """
+    try:
+        # Parse the datetime string
+        dt_obj = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+        return dt_obj.date()
+    except ValueError as e:
+        raise ValueError(f"Invalid datetime format: {e}")
+
+# sample sorted_date
+# [(datetime.date(2024, 1, 1), 10), (datetime.date(2024, 1, 1), 20), (datetime.date(2024, 1, 1), 35), (datetime.date(2024, 1, 2), 5)]
+
+
+def sort_convert_data(data_in):
+    trans_data = [(datetime_str_to_date(d.get("timestamp")), d.get("amount"))
+                  for d in data_in]
+    return sorted(trans_data)
+
+def reset_dict(date_key, value):
+    return {date_key: [value]}
+
+
+def group_transactions(sorted_data):
+    grouped_list = []
+
+    for idx, sd in enumerate(sorted_data):
+        sd_date = sd[0].strftime("%Y-%m-%d")
+        amt_value = sd[1]
+        if idx == 0:
+            current_key = sd_date
+            curr_dict = reset_dict(sd_date, amt_value)  # initialize before start
+            continue
+
+        # are we on the same date ?
+        if current_key == sd_date:
+            curr_dict[sd_date] = curr_dict.get(sd_date) + [amt_value]
+
+        else:
+            grouped_list.append(curr_dict)  # save curr_date before reset
+            current_key = sd_date           # start of new data
+            curr_dict = reset_dict(current_key, amt_value)
+
+        # check for last loop as exit condition
+        if idx+1 == len(sorted_data):
+            # save last tuple after exit loop
+            grouped_list.append(curr_dict)
+
+    return grouped_list
+
+data_sorted = sort_convert_data(data)
+trans_grouped = group_transactions(data_sorted)
+print(trans_grouped)
