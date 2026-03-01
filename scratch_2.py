@@ -45,8 +45,8 @@ def group_transactions(sorted_data):
 
         # are we on the same date ?
         if current_key == sd_date:
-            curr_dict[sd_date] = curr_dict.get(sd_date) + [amt_value]
-
+            # curr_dict[sd_date] = curr_dict.get(sd_date) + [amt_value]
+            curr_dict[current_key].append(amt_value)
         else:
             grouped_list.append(curr_dict)  # save curr_date before reset
             current_key = sd_date           # start of new data
