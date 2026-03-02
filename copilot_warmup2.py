@@ -300,8 +300,8 @@ def group_transactions(sorted_data):
 
         # are we on the same date ?
         if current_key == sd_date:
-            # curr_dict[sd_date] = curr_dict.get(sd_date) + [amt_value]
-            curr_dict[current_key].append(amt_value)
+            # curr_dict[sd_date] = curr_dict.get(sd_date) + [amt_value]  # this creates a new list
+            curr_dict[current_key].append(amt_value)    # this modifies the current list value in lace
         else:
             grouped_list.append(curr_dict)  # save curr_date before reset
             current_key = sd_date           # start of new data
@@ -317,3 +317,67 @@ def group_transactions(sorted_data):
 data_sorted = sort_convert_data(data)
 trans_grouped = group_transactions(data_sorted)
 print(trans_grouped)
+
+# TODO: understand this elegance solution : desired output shape dictates the simplest internal data structure.
+# TODO: Once you choose the right structure, the algorithm collapses into something trivial.
+
+groups = {}
+# update each date kay with transaction amounts by appending to list
+for date, amount in data_sorted:
+    key = date.strftime("%Y-%m-%d")
+    groups.setdefault(key, []).append(amount)
+
+
+#  imagine grouping by two keys (e.g., date and user), what accumulator shape do you think the output implies?
+data = {
+    "2024-01-01": {
+        "user123": [1, 2, 3],
+        "user456": [4, 5, 6],
+    },
+    "2025-01-01": {
+        "user456": [4, 5, 6],
+        "user789": [7, 8,9],
+    },
+}
+"""
+already encodes the full logic of the grouping operation:
+The outer key is the first grouping dimension (date).
+The inner key is the second grouping dimension (user).
+The value is a list that grows as you encounter matching rows.
+nested dict gives you:
+O(1) lookup for the outer key
+O(1) lookup for the inner key ; a list that grows in place
+
+ grouped by three keys (e.g., date → user → event_type), the accumulator becomes:
+ {
+  date: {
+    user: {
+      event_type: [values...]
+    }
+  }
+}
+
+
+"""
+data = {
+    "2024-01-01": {
+        "user123": {
+            "09:00": [1, 2],
+            "12:00": [3],
+            "23:00": [4, 5],
+        },
+        "user456": {
+            "11:00": [6],
+            "18:00": [7, 8],
+        },
+    },
+    "2024-01-02": {
+        "user123": {
+            "08:00": [9],
+            "16:00": [10, 11],
+        },
+        "user789": {
+            "13:00": [12],
+        },
+    },
+}

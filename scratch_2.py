@@ -64,3 +64,9 @@ data_sorted = sort_convert_data(data)
 
 trans_grouped = group_transactions(data_sorted)
 print(trans_grouped)
+
+groups = {}
+for date, amount in data_sorted:
+    key = date.strftime("%Y-%m-%d")
+    groups.setdefault(key, []).append(amount)
+
