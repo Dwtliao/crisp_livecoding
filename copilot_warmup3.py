@@ -74,3 +74,72 @@ def rolling_avg_best(nums, k):
 output = []
 output = rolling_avg_best(nums, k=4)
 print("rolling avgs: ", output)
+
+
+"""
+Detect anomalies in a sequence
+Given a list of integers, return all values that are more than 2 standard deviations from the mean..
+
+Real question:  Do we compute mean and std once or update dynamically?
+What about empty lists?
+Skills trained: statistical reasoning ; edge cases ; defining thresholds
+
+let's start with math formulas required for Std Deviation
+
+mean = sum(values) / k  (k = len(values or numbers in a list) )
+
+variance = sum((x - mean) ** 2 for x in values) / k
+Std Deviation = SquareRoot(variance)
+"""
+# create math functions we need
+import math
+
+
+def mean(n: list):
+    k = len(n)
+    return float(sum(n) / k)
+
+def std_dev(values):
+    k = len(values)
+    mean = sum(values) / k
+    variance = sum( (x - mean) ** 2 for x in values ) / k
+    return math.sqrt(variance)
+
+def two_std_from_mean_left(sdv, mean):
+    return (mean - (2 * sdv))
+
+def two_std_from_mean_right(sdv, mean):
+    return (mean + (2 * sdv))
+
+
+num_values = list(range(1,20))
+print(num_values)
+num_stddev = std_dev(num_values)
+num_mean = mean(num_values)
+print("std dev ", num_stddev, "mean ", num_mean)
+# 2 std deviations from mean
+compare_value_left = two_std_from_mean_left(num_stddev, num_mean)
+compare_value_right = two_std_from_mean_right(num_stddev, num_mean)
+print("compare_values are [ ", compare_value_left, "to" , compare_value_right, "]")
+
+keep2 = [n for n in num_values if n < compare_value_left or n > compare_value_right]
+
+keep = []
+for n in num_values:
+    if n < compare_value_left or n > compare_value_right:   #
+        keep.append(n)
+        print("keep ", n)
+
+# A simple, interview‑ready version of the code
+def anomalies(nums):
+    if not nums:
+        return []
+
+    mean = sum(nums) / len(nums)
+    variance = sum((x - mean)**2 for x in nums) / len(nums)
+    std = variance ** 0.5
+
+    lower = mean - 2*std
+    upper = mean + 2*std
+
+    return [x for x in nums if x < lower or x > upper]
