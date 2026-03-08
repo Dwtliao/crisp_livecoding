@@ -60,8 +60,10 @@ print("rolling avgs: ", output)
 
 # most efficient version think of the window as starting at index i:
 # This perspective is common in algorithmic interviews because it aligns with “iterate forward and take the next k items.”
-i = 0
+i = 0   # k=4 then i values are: 0, 1.
 nums = [10, 20, 30, 40, 50]
+# visualize you need k numbers to compute rolling avg so range to iterate is i: i+k
+k=4
 window = nums[i : i+k]
 
 def rolling_avg_best(nums, k):
@@ -71,9 +73,8 @@ def rolling_avg_best(nums, k):
         out.append(sum(window) / k)
     return out
 
-output = []
-output = rolling_avg_best(nums, k=4)
-print("rolling avgs: ", output)
+output = rolling_avg_best(nums, k=4)    # i values are: 0, 1.
+print("rolling avgs: ", output)         # [25.0, 35.0]
 
 
 """
@@ -143,3 +144,127 @@ def anomalies(nums):
     upper = mean + 2*std
 
     return [x for x in nums if x < lower or x > upper]
+"""
+The invariant is: center = mean ; radius = std  ; threshold = 2 × radius ; compare distance to threshold
+This is the same structural reasoning you used in the timestamp session problem: define the boundary, then filter.
+"""
+
+"""
+Deduplicate customer records:  What defines a duplicate?  ID? Email? Both?  Which record wins if fields differ?
+Skills trained: clarifying requirements ; defining equality ; choosing data structures
+[ {"id": 1, "email": "a@example.com"},
+  {"id": 2, "email": "b@example.com"} ]
+
+"""
+
+data = [
+    {"id": 1, "email": "a@example.com"},
+    {"id": 1, "email": "a@example.com"},
+    {"id": 2, "email": "b@example.com"},
+    {"id": 2, "email": "b2@example.com"}
+]
+# assumptions: each row is a dict where id and email are both keys to check for dups
+# assumptions: same id value can have multiple diff emails and those are 2 different customer records
+def rmv_duplicates(cust_recs):
+    unique = []
+
+    for r in cust_recs:
+        id = r["id"]
+        email = r["email"]
+        if r in unique:
+            continue
+        # else this is a new unique row
+        unique.append(r)
+
+    return(unique)
+
+no_dups = rmv_duplicates(data)
+
+# SAFER approach built a tuple of value pairs for comparison in a set which enforcees uniqueness
+def rmv_duplicates_sig(records):
+    seen = set()
+    unique = []
+
+    for r in records:
+        sig = (r["id"], r["email"])   # the fields that define uniqueness
+        if sig in seen:
+            continue
+        seen.add(sig)
+        unique.append(r)
+
+    return unique
+
+# Safest approach If rows might contain the same data but in different shapes (extra fields, different ordering), you can normalize them.
+def rmv_duplicates_normalized(records):
+    seen = set()
+    unique = []
+    """ Rows may have inconsistent key ordering.  Rows may have extra fields.  You want to compare entire dict content.
+    """
+
+    for r in records:
+        normalized = tuple(sorted(r.items()))   # Normalization is a “defensive programming” move.
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        unique.append(r)
+
+    return unique
+
+# You’re not relying on Python’s dict equality semantics.
+def rmv_duplicates_define_uniq(records):
+    unique = []
+    for r in records:
+        if not any(r["id"] == u["id"] and r["email"] == u["email"] for u in unique):
+            unique.append(r)
+    return unique
+
+""" 
+switch the uniqueness rule from (id, email) to email only, the entire shape of the problem changes. 
+a deeper, more ambiguous question: If multiple IDs share the same email, what does that mean, and which record should survive?
+"""
+# assumptions : intent is to Merge multiple ID(s) for same email so data info is preserved not lost
+
+emails = [
+    {"id": 1, "email": "a@example.com"},
+    {"id": 3, "email": "a@example.com"},
+    {"id": 2, "email": "b@example.com"},
+    {"id": 4, "email": "b2@example.com"},
+    {"id": 3, "email": "a@example.com"},
+]
+
+def merge_email_ids(data):
+    #from collections import defaultdict
+    #unique = defaultdict(list)
+    unique = {}
+    for d in data:
+        if d["email"] in unique:
+            unique[d["email"]].append(d["id"])  # add to existin list of ids
+        else:
+            unique[d["email"]] = [d["id"]]      # init with first id
+
+    return unique
+
+emails_uniq = merge_email_ids(emails)
+emails_uniq_list = [{"email": email, "ids": ids} for email, ids in emails_uniq.items()]
+
+def merge_email_ids2(data):
+    unique = {}
+    for d in data:
+        email = d["email"]
+        unique.setdefault(email, []).append(d["id"])    # setdefault to avoid explicit if/else, but logic is identical.
+    return unique
+
+
+def merge_email_ids_sets(data):
+    unique = {}
+    for d in data:
+        email = d["email"]
+        id_ = d["id"]
+        if email in unique:
+            unique[email].add(id_)
+        else:
+            unique[email] = {id_}   # correct single-item set
+
+    return [{"email": email, "ids": list(ids)} for email, ids in unique.items()]
+
+emails_uniq_set = merge_email_ids_sets(emails)
