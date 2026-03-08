@@ -5,27 +5,26 @@ Output: { "apple": 2, "banana": 1 }
 This tests:
 splitting, iteration, hash maps, clarity of code
 """
-
+from collections import defaultdict
 str_to_split = "apple banana apple orange"
 splitted = str_to_split.split(" ")
-
 word_dict = {}
 from collections import defaultdict, Counter
 word_dict2 = defaultdict(int)
-word_dict4 = {}
+str_to_split = "apple banana apple orange"
 
-for word in splitted:
-    word_dict[word] = word_dict.get(word, 0) + 1
-    word_dict2[word] += 1   # only works on collections dict with auto‑initializes missing keys to 0, so += 1 is safe
-    if not word_dict4.get(word):
-        word_dict4[word] = 1
-    else:
-        word_dict4[word] += 1
 
-word_dict3 = Counter(splitted)
-#print(word_dict)
-#print(word_dict2)
-#print(word_dict3, word_dict4)
+def word_split(words_in:str):
+    from collections import defaultdict
+    w_dict = defaultdict(int) # only works on collections dict with auto‑initializes missing keys to 0, so += 1 is safe
+    w_dict2 = {}
+    for w in words_in.split():
+        w_dict[w] += 1      # concise form if proper dict type obj initialized
+        w_dict2[w] = w_dict2.get(w, 0) + 1   # default to 0 if key doesnt exist, else + 1
+
+    return w_dict2
+
+answer = word_split(str_to_split)
 
 """
 Q2: Remove duplicates from a list while preserving order
@@ -48,7 +47,45 @@ for i in in_list:
         result.append(i)
 
 #print(s, result)
+""" try above problem with dict taking advantage that keys are unique
+🧭 Core idea: You maintain a single invariant:
+    The ordered list always contains exactly the first occurrence of each value seen so far.
+    
+"""
+in_list = [3, 1, 3, 2, 1]
+def rmv_duplicates(num_list):       # BUT Fails to Preserve ORder as asked in orig question
+    from collections import defaultdict, Counter
+    num_count = defaultdict(int)
+    for n in num_list:
+        num_count[n] += 1
 
+    unique_nums = [k for k, v in num_count.items() if v == 1]
+    print(unique_nums)
+    return unique_nums
+uniq_nums = rmv_duplicates(in_list)
+# Outer loop: runs n times and inner loop scans upto n elements for membership Performance is O(n sqrd2) ( n x n )
+def keep_unique(num_list):    # simplest non set soln
+    ordered = []
+    for n in num_list:
+        if n in ordered:    # we already saw number
+            continue
+        ordered.append(n)
+
+    return ordered
+uniq_nums_ordered = keep_unique(in_list)
+# A dict is a hash table underneath, so checking membership doesn’t require scanning the accumulator.
+#  Because dicts preserve insertion order, the keys reflect the first time each value appeared. This keeps the logic identical
+#  to the list-based version but reduces membership checks from O(n) to O(1), making the whole algorithm linear.”
+def unique_with_dicts(num_list):
+    uniq_nums = {}
+
+    for n in num_list:
+        if uniq_nums.get(n):    # we already saw number
+            continue
+        uniq_nums[n] = True
+
+    return list( uniq_nums.keys() )
+uniq_nums_dict = unique_with_dicts(in_list)
 """
 3. Find the first non‑repeating character
 Input: "swiss"  
@@ -57,6 +94,34 @@ Output: "w"
 This tests: counting, scanning, clean reasoning
 """
 in_str = "swiss"
+def find_non_repeat(word_str):
+    from collections import defaultdict, Counter
+    char_count = defaultdict(int)
+    for n in word_str:
+        char_count[n] += 1
+
+    unique_chars = [k for k, v in char_count.items() if v == 1]  # list of non repeats
+    # but now find the 1st occurrence non repeat letter
+    for l in word_str:
+        if l in set(unique_chars):   # want first occurrence of letter non repeat
+            print("1st non-repeat letter :" , l)
+            return(l)
+
+first_letter = find_non_repeat(in_str)
+
+def find_non_repeat2(word_str):
+    # word_str gives you the correct chronological order
+    # char_count gives you the global truth about repetition/freq occurrence
+    from collections import defaultdict, Counter
+    char_count = defaultdict(int)
+    for n in word_str:
+        char_count[n] += 1      # hash table of frequence
+    # find all non‑repeats, then find the first one” into a single clean invariant:
+    for l in word_str:  # walk the letters in correct order
+        if char_count[l] == 1:      # use dict to exit quickly with answer, first letter freq == 1
+            return l
+
+
 not_rep = set()
 repeats = set()
 not_rep_list = []
@@ -183,34 +248,27 @@ updates = [ { "id": 1, "version": 1 }, { "id": 2, "version": 1 }, { "id": 3, "ve
 updates = [
     {"id": 1, "version": 1},
     {"id": 1, "version": 2},  # duplicate of id=1, so output only has 1 entry after this
-    {"id": 2, "version": 1},  # i=2 here, but output index for id=2 is actually 1
-    {"id": 2, "version": 2},  # will try output[2] — IndexError or wrong slot
+    {"id": 2, "version": 2},  # i=2 here, but output index for id=2 is actually 1
+    {"id": 2, "version": 1},  # will try output[2] — IndexError or wrong slot
 ]
-output = []
-user_index ={}
+# use dict for output to match desired outcome of unique hash table updated thru loop
+def prod_update(trans):
+    product = {}
+    for t in trans:
+        id = t.get("id")
+        ver = t.get("version")
+        if id in product:    #product.get(id):  # we have this key, check version values to decide to update or not
+            if product[id]["version"] < ver:    # we safely update whether data is sorted or not but avoids cost of sorting
+                product[id] = t     #{"id": id, "version": ver}
+        else:
+            product[id] = t     # {"id": id, "version": ver}    # init with new id
 
-for i, u in enumerate(updates):
-    row_dict = {}
-    id = u.get("id")
-    ver = u.get("version")
-    #print(id, ver, "index:" ,i)
-    #row_dict["id"] = id
-    #row_dict["version"] = ver
-    row_dict.update({"id": id, "version": ver})
+    # product = {1: {'id': 1, 'version': 2}, 2: {'id': 2, 'version': 2}}
+    return list(product.values())   # [{'id': 1, 'version': 2}, {'id': 2, 'version': 2}]
 
-    #if user_index.get(id) is not None:      #user has previous version
-    if id in user_index:                    # key exists
-        idx = user_index[id]
-        # we want to replace row in output
-        if len(output) > 0:
-            output[idx] = row_dict
+final_trans = prod_update(updates)
 
-    else:   # init user's row index to be position where we are appending
-        # store output index BEFORE appending (len(output) == next available index after the append)
-        user_index[id] = len(output)
-        output.append(row_dict)
 
-print(output)
 """
 When to use which pattern for py dict objs
 Goal	                Best pattern
@@ -244,43 +302,27 @@ data = [
     {"id": 2, "extra_field": "oops"},  # invalid but contributes "extra_field" to valid_keys
     {"id": 3, "name": "C"}
 ]
-output = []
-# seems like iterating thru each row and counting number of expected keys is a good first level idea=> bad assumption that all keys in data set is VALID !! error
-key_count_s = set()
-valid_keys = set()
-required = {"id", "name"}  # a set was given as clue in problem statement
-
-# over engineering trying to infer keys has weakness what if you are given a bad key how would you know ??
-for r in data:
-    if type(r) is dict:
-        key_count_s.add(len(r))
-        keys = set(list(r.keys()))
-        for k in keys:
-            valid_keys.add(k)
-
-# print(key_count_s)
-# keys_expected = max(key_count_s)
-print("valid_keys",valid_keys)
-
-for i, r in enumerate(data):
-    if set(list(r.keys())) == set(list(required)):
-    #if set(list(r.keys())) == valid_keys:   # does NOT work with bad key exists in data
-        output.append(r)
+required = {"id", "name"}
 
 output3 = []
 for r in data:
     # k in r on a dict checks if k is a key — so it's just saying "for every required key, is it in this dict?"
-    # and all() makes sure every single one passes.
+    # and all() makes sure every single one passes.  membership on a dict means key membership.
+    # all([True, True, True])   # True  ;  all([True, False, True])  # False
     if all(k in r for k in required):
         output3.append(r)
 
-print(output, output3)
+print(output3)
+# (k in r for k in required) produces something like [True, True]  # if both required keys are present
+# [True, False]       # if one is missing
 
 #simplest solution
 required = {"id", "name"}
 output2 = [r for r in data if required.issubset(r.keys())]
-output3 = [all(k in r for k in required)]    # "for every required key, is it in the dict?"
+output3 = [r for r in data if all(k in r for k in required)]
+
 print(output2, output3)
+
 # helpful hints
 required = {"id", "name"}        # this is a set
 r.keys()                         # dict_keys(['id', 'name']) — set-like view
@@ -396,12 +438,62 @@ for w in output:
 for w in reversed(words):
     print(w)
 final_string2 = " ".join(reversed(words))  # stitch back into a string
-print(final_string)
+print(final_string2)
 
 # word slice technique ; sequence[start : stop : step]
+# If step is positive, default start=0, stop=len(seq)
+# If step is negative, default start=len(seq)-1, stop=-1
 # start at the end, # go until the beginning,  # step backwards by 1
+# visualize what python does to fill in ==>  words[len(words)-1 : -1 : -1]
 words[ : : -1]  # ['david', 'from', 'world', 'hello']
 "hello"[::-1] # 'olleh'
+final_string = " ".join(words[ : : -1])
+"""  few more examples to cement the pattern
+
+"""
+words[::-2]     # => Reverse every other element:       ['david', 'world']
+words[-2::-1]   # => Reverse but skip the last element: ['from', 'world', 'hello']
+words[3:0:-1]   # => Reverse only the middle section:   ['david', 'from', 'world']
+
+matrix = [
+    [10, 11, 12],
+    [20, 21, 22],
+    [30, 31, 32],
+    [40, 41, 42]
+]
+""" Before:
+Row 0 → [10, 11, 12]
+Row 1 → [20, 21, 22]
+Row 2 → [30, 31, 32]
+Row 3 → [40, 41, 42]
+
+Reverse the outer list (reverse the rows):  Python sees step = -1, so it defaults to: start at last row, walk backwards, stop before index -1
+"""
+matrix[::-1]
+"""
+After matrix[::-1]:
+3: [40, 41, 42]
+2: [30, 31, 32]
+1: [20, 21, 22]
+0: [10, 11, 12]
+
+Reverse the inner lists (reverse each row)
+"""
+
+[row[::-1] for row in matrix]
+"""
+Row 0: [10, 11, 12] → [12, 11, 10]
+Row 1: [20, 21, 22] → [22, 21, 20]
+Row 2: [30, 31, 32] → [32, 31, 30]
+Row 3: [40, 41, 42] → [42, 41, 40]
+
+Reverse BOTH layers (full 180° flip)
+"""
+[row[::-1] for row in matrix[::-1]]
+# [[42, 41, 40], [32, 31, 30], [22, 21, 20], [12, 11, 10]]
+
+
+
 
 """
 10. Given a list of timestamps, group them into sessions
