@@ -1,86 +1,76 @@
-"""
-Section 2 “Don’t code until you see the structure”
-Group transactions by day
-
-data = [
-  {"timestamp": "2024-01-01T10:00", "amount": 10},
-  {"timestamp": "2024-01-01T12:00", "amount": 20},
-  {"timestamp": "2024-01-02T09:00", "amount": 5}
-]
-wanted_output = {
-  "2024-01-01": [10, 20],
-  "2024-01-02": [5]
-}
-Observed Assumptions to start: each row of data is a dict obj of a date and timestamp key and amount key
-we dont need the time port of datetime so we need to func to convert these values and drop the time component
-
-once data list is converted to date keys with amounts it will be easier to group amount transactions together
-"""
-data = [
-  {"timestamp": "2024-01-01T10:00", "amount": 10},
-  {"timestamp": "2024-01-01T12:00", "amount": 20},
-  {"timestamp": "2024-01-02T09:00", "amount": 5},
-  {"timestamp": "2024-01-01T14:00", "amount": 35}
-]
-from datetime import date, datetime
+days = ["2024-01-01", "2024-01-02", "2024-01-04", "2024-01-05", "2024-01-06"]
 
 
-def datetime_str_to_date(dt_str: str):
-    """
-    Convert an ISO-like datetime string (e.g., '2024-01-01T10:00') to a date object.
-    """
-    try:
-        # Parse the datetime string
-        dt_obj = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
-        return dt_obj.date()
-    except ValueError as e:
-        raise ValueError(f"Invalid datetime format: {e}")
+def find_consec_days(strings):
+    from datetime import datetime
+    dates = [datetime.strptime(s, "%Y-%m-%d").date() for s in strings]
+    start = None
+    prev = None
+    prev_streak_len = 0
+    current_len = 0     # len of current consecutive streak
+    # expect date delta to be 1 day apart, if not save current streak and start counting next streak
 
-# convert to a simple list of tuple values?  and I should not assume sorting so I must sort myself
+    for d in sorted(dates):
+        if start is None:   # 1st loop pass
+            start = d
+            delta = 0
+        else:
+            delta = (d - prev).days     # what is current date diff to prev date
+
+        if delta > 1:               # reset start date
+            if current_len > prev_streak_len:
+                current_streak = [start, prev]
+                prev_streak_len = current_len
+
+            start = d
+            prev = d
+            current_len = 0
+            continue
+
+        # delta = 1 or 0, keep current streak alive
+        prev = d
+        if delta == 1:       # only increment if delta is one day, skips loop 1
+            current_len += 1
 
 
-trans_data = [(datetime_str_to_date(d.get("timestamp")), d.get("amount"))
-               for d in data]
-sorted_data = sorted(trans_data)
+    # loop has ended check current streak
+    if current_len > prev_streak_len:
+        current_streak = [start, prev]
+    # we have a tie?  keep both streaks
+    elif current_len == prev_streak_len:
+        if current_streak:
+            current_streak.append([start, prev])
 
-#sorted_dict = [{d.get("timestamp")[:10] : d.get("amount")}
-#               for d in data]
+    return current_streak
 
-#  once I have sorted pairs I think i can keep iterating but initialize with a current obj = {date: amounts_list} and
-#  as I iterate update the current obj if appropriate or append last current_obj into final output and re-set current obj
-# sample sorted_date
-# [(datetime.date(2024, 1, 1), 10), (datetime.date(2024, 1, 1), 20), (datetime.date(2024, 1, 1), 35), (datetime.date(2024, 1, 2), 5)]
+longest_streak = find_consec_days(days)
+longest_streak
 
-#curr_date = sorted_data[0]  # initialize before start
+# simpler cleaner version using slice
 
-def reset_tuple(row: tuple):
-    return ( row[0], [row[1]] )
+from datetime import datetime
 
-def reset_dict(row: tuple):
-    date_str = row[0].strftime("%Y-%m-%d")
-    return {date_str: [row[1]]}
+def find_consec_days_slice(strings):
+    dates = sorted(datetime.strptime(s, "%Y-%m-%d").date() for s in strings)
 
-grouped_list = []
+    best_start = best_end = None
+    best_len = 0
 
-for idx, sd in enumerate(sorted_data):
-    if idx == 0:
-        curr_date = reset_tuple(sd)
-        curr_dict = reset_dict(sd)  # initialize before start
-        continue
-    # are we on the same date ?
-    if curr_date[0] == sd[0]:
-        # re-create curr_date tuple
-        #curr_date = ( curr_date[0] , curr_date[1]+[sd[1]] )
-        sd_date = sd[0].strftime("%Y-%m-%d")
-        curr_dict[sd_date] = curr_dict.get(sd_date) + [sd[1]]
+    curr_start = curr_end = dates[0]
+    curr_len = 0
 
-    else:   # save curr_date before reset
-        grouped_list.append(curr_dict)
-        curr_date = reset_tuple(sd)  # reset with new date
-        curr_dict = reset_dict(sd)
-    # check for last loop as exit condition
-    if idx+1 == len(sorted_data):
-        # save last tuple after exit loop
-        grouped_list.append(curr_dict)
+    for d in dates[1:]:
+        if (d - curr_end).days == 1:
+            curr_end = d
+            curr_len += 1
+        else:
+            if curr_len > best_len:
+                best_len = curr_len
+                best_start, best_end = curr_start, curr_end
+            curr_start = curr_end = d
+            curr_len = 0
 
-print(grouped_list)
+    if curr_len > best_len:
+        best_start, best_end = curr_start, curr_end
+
+    return [best_start, best_end]

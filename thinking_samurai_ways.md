@@ -148,3 +148,7 @@ This generalizes to:
 “group by key”
 “dedupe while preserving order”
 “merge records by ID”
+
+## Python strings have a small set of “core” methods that show up everywhere:
+.strip() ; .split() ; .join() ; .startswith() ; .endswith(); .replace()
+.find() ; .lower(), .upper()

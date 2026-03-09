@@ -268,3 +268,172 @@ def merge_email_ids_sets(data):
     return [{"email": email, "ids": list(ids)} for email, ids in unique.items()]
 
 emails_uniq_set = merge_email_ids_sets(emails)
+
+"""
+Reconstruct a message from fragments: Is order guaranteed?? Should we trim whitespace?  What if fragments overlap?
+frag = ["Hel", "lo ", "Wor", "ld"]
+msg = "Hello World"
+
+Assumptions: if there is a white space at end of a string assume the previous word has ended
+"""
+frag = ["Hel", "lo ", "Wor", "ld,", "go", "od ", "morning"]
+
+
+def reconstruct1(f_list):
+    words = []
+    current = ""
+    # what is condition to start a new word?
+    for idx, f in enumerate(f_list):
+        if (" " in f) or (',' in f) or (idx+1 == len(f_list)):  # assume current word is ending or end of list of fragments
+            current = current + "".join(f)
+            words.append(current)
+            current = ""
+        else:
+            current = current + "".join(f)
+
+    return " ".join(words)
+
+final_msg = reconstruct1(frag)
+print(final_msg)
+
+# assume current word is ending or end of list of fragments;  You didn’t need to know you were on index 3.
+# You only needed to know: # “current ends with a boundary?”
+# “is current non‑empty after the loop?”  # That’s the invariant.
+def reconstruct2(f_list):
+    words = []
+    current = ""
+    for f in f_list:
+        current += f
+        if current.endswith((" ", ",")):    # endswith() matches the semantic boundary, not the fragment boundary.
+            words.append(current.strip())
+            current = ""
+
+    if current:     # append final fragment
+        words.append(current)
+
+    return " ".join(words)
+
+final_msg = reconstruct2(frag)
+print(final_msg)
+
+""" Grouping: flush when the key changes ; Group sorted rows by user_id.
+"""
+def group_rows(rows):
+    groups = []
+    current_user = None
+    current_rows = []
+
+    for row in rows:
+        if row["user_id"] != current_user:
+            if current_rows:
+                groups.append(current_rows)
+            current_user = row["user_id"]
+            current_rows = []
+        current_rows.append(row)
+
+    if current_rows:
+        groups.append(current_rows)
+
+# Split a string into tokens without using .split().
+def split_string_on_space(text):
+    tokens = []
+    current = ""
+
+    for ch in text: #traverse each char in long string
+        if ch.isspace():
+            # If there are multiple spaces, you’d keep hitting whitespace again.
+            if current:
+                tokens.append(current)  #
+                current = ""
+        else:
+            current += ch
+
+    if current:
+        tokens.append(current)
+    return tokens
+
+test_split =  split_string_on_space("this is a    long string.")
+print(test_split)
+
+
+"""  Find the longest streak of consecutive days
+days = ["2024-01-01", "2024-01-02", "2024-01-04", "2024-01-05", "2024-01-06"]
+result = ["2024-01-04", "2024-01-06"]
+
+assumptions: sort the given list first so we can work with sorted list as iteration 1
+keep track of len of current range and overwrite after a new winner is found
+"""
+days = ["2024-01-01", "2024-01-02", "2024-01-04", "2024-01-05", "2024-01-06"]
+
+
+def find_consec_days(strings):
+    from datetime import datetime
+    dates = [datetime.strptime(s, "%Y-%m-%d").date() for s in strings]
+    start = None
+    prev = None
+    prev_streak_len = 0
+    current_len = 0     # len of current consecutive streak
+    # expect date delta to be 1 day apart, if not save current streak and start counting next streak
+
+    for d in sorted(dates):
+        if start is None:   # 1st loop pass
+            start = d
+            delta = 0
+        else:
+            delta = (d - prev).days     # what is current date diff to prev date
+
+        if delta > 1:               # reset start date
+            if current_len > prev_streak_len:
+                current_streak = [start, prev]
+                prev_streak_len = current_len
+
+            start = d
+            prev = d
+            current_len = 0
+            continue
+
+        # delta = 1 or 0, keep current streak alive
+        prev = d
+        if delta == 1:       # only increment if delta is one day, skips loop 1
+            current_len += 1
+
+
+    # loop has ended check current streak
+    if current_len > prev_streak_len:
+        current_streak = [start, prev]
+    # we have a tie?  keep both streaks
+    elif current_len == prev_streak_len:
+        if current_streak:
+            current_streak.append([start, prev])
+
+    return current_streak
+
+longest_streak = find_consec_days(days)
+longest_streak
+
+# simpler cleaner version using slice
+def find_consec_days_slice(strings):
+    from datetime import datetime
+    dates = sorted(datetime.strptime(s, "%Y-%m-%d").date() for s in strings)
+
+    best_start = best_end = None
+    best_len = 0
+
+    curr_start = curr_end = dates[0]
+    curr_len = 0
+
+    for d in dates[1:]:
+        if (d - curr_end).days == 1:
+            curr_end = d
+            curr_len += 1
+        else:
+            if curr_len > best_len:
+                best_len = curr_len
+                best_start, best_end = curr_start, curr_end
+            curr_start = curr_end = d
+            curr_len = 0
+
+    if curr_len > best_len:
+        best_start, best_end = curr_start, curr_end
+
+    return [best_start, best_end]
