@@ -42,11 +42,13 @@ print("rolling avgs: ", output)
 def rolling_avg(nums_list: list, k:int):
     avg_list = []
     window_range = (k-1)
+    print("window_range =", window_range)
 
     # if i >= (k-1):  # then compute as only then do we have enough values to total
     for i in range(window_range, len(nums_list)):
+        print("i=", i)
         # slice list properly as we dont want negative values
-        window = nums[max(0, i - window_range): i + 1]
+        window = nums_list[max(0, i - window_range): i + 1]
         print(window, sum(window))
         roll_avg = sum(window) / k
         avg_list.append(roll_avg)
@@ -62,6 +64,7 @@ print("rolling avgs: ", output)
 # This perspective is common in algorithmic interviews because it aligns with “iterate forward and take the next k items.”
 i = 0   # k=4 then i values are: 0, 1.
 nums = [10, 20, 30, 40, 50]
+nums = [10, 20, 30, 40, 50, 60]
 # visualize you need k numbers to compute rolling avg so range to iterate is i: i+k
 k=4
 window = nums[i : i+k]
@@ -69,7 +72,9 @@ window = nums[i : i+k]
 def rolling_avg_best(nums, k):
     out = []
     for i in range(len(nums) - k + 1):
+        print("i=", i)
         window = nums[i:i+k]
+        print(window, sum(window))
         out.append(sum(window) / k)
     return out
 
@@ -205,7 +210,7 @@ def rmv_duplicates_normalized(records):
         normalized = tuple(sorted(r.items()))   # Normalization is a “defensive programming” move.
         if normalized in seen:
             continue
-        seen.add(normalized)
+        seen.add(normalized)    # Lists are not hashable, but tuples are.  This can safely go into a set:
         unique.append(r)
 
     return unique
@@ -268,6 +273,25 @@ def merge_email_ids_sets(data):
     return [{"email": email, "ids": list(ids)} for email, ids in unique.items()]
 
 emails_uniq_set = merge_email_ids_sets(emails)
+# return statement above is equal :
+def merge_email_ids_sets2(data):
+    unique = {}
+    for d in data:
+        email = d["email"]
+        id_ = d["id"]
+        if email in unique:
+            unique[email].add(id_)
+        else:
+            unique[email] = {id_}   # correct single-item set
+
+    result = []
+    for email, ids in unique.items():
+        result.append({
+            "email": email,
+            "ids": list(ids)
+        })
+    return result
+
 
 """
 Reconstruct a message from fragments: Is order guaranteed?? Should we trim whitespace?  What if fragments overlap?
