@@ -371,13 +371,21 @@ lengths = [len(d) for d in data ]  # [2, 5, 3]
 max_str = max(data, key=len)    # use a compare func in arg key=
 print(long_string, max_str)
 
+"""
+ommon built-ins that take key=:
+sorted(iterable, key=...)
+min(iterable, key=...)
+max(iterable, key=...)
+Also list.sort(key=...) (method, not built-in function).
+"""
+
 # example 2
 rows = [ {"id": 1, "version": 1}, {"id": 1, "version": 3}, {"id": 1, "version": 2}, ]
 latest_row = max(rows, key=lambda r: r["version"])
 print(latest_row)
 
 scores = { "alice": 12, "bob": 7, "charlie": 19, "diana": 14 }
-winner = max(scores.items(), key=lambda kv: kv[1])
+winner = max(scores.items(), key=lambda kv: kv[1])  # type(scores.items()) is a iterable yielding tuples
 print(winner)
 
 api_calls = {
@@ -582,7 +590,7 @@ def group_sessions(raw_times, gap=30):
             sessions.append(current)
             current = [curr]
 
-    sessions.append(current)
+    sessions.append(current)    # account for last loop
     return sessions
 
 print(group_sessions(["10:00", "10:10", "10:40", "11:20"]))

@@ -30,7 +30,8 @@ The clearest single‑sentence statement of the canonical pattern is:
 “A normalized SKU is the uppercase sequence of all alphanumeric characters in order, with all whitespace and separators removed.”
 This is the version that sounds senior and calm:
 
-“I’ll write a small helper that takes a character, uppercases it, and returns it only if it’s’ll write a small helper that takes a character, uppercases it, and returns it only if it’s a letter or digit. I can check that either with Python’s isalnum() or like A–Z and 0– by comparing ranges9. The key is that only alphanumeric characters survive.”
+“I’ll write a small helper that takes a character, uppercases it, and returns it only if it’s a letter or digit. 
+I can check that either with Python’s isalnum() or like A–Z and 0– by comparing ranges9. The key is that only alphanumeric characters survive.”
 """
 skus = ["abc-123", "ABC123", "abc_123", "Abc-123 "]
 
